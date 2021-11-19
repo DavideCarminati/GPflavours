@@ -25,7 +25,7 @@ y = [ -1,   0,   1,  -1,  -1,    1,    1,    0,    0,   -1,   -1,   -1,   -1,   
 % y = -1;
 
 % Define the points under consideration
-n = 5; % # of eigenvalues
+n = 10; % # of eigenvalues
 % x = [0.2, 0.4, 0.6, 0.6, 0.9, 0.55, 0.66, 0.66, 0.79, 0.08, 0.12, 0.29, 0.87, 0.91; ...
 %      0.5, 0.5, 0.5, 0.1, 0.6, 0.55, 0.54, 0.33, 0.58, 0.08, 0.30, 0.16, 0.12, 0.29];
 % y = [ -1,   0,   1,  -1,  -1,    1,    1,    0,    0,   -1,   -1,   -1,   -1,   -1];
@@ -38,8 +38,8 @@ X = [ X1(:), X2(:) ];
 % phi accepts row vector n and column vector x
 %     it returns a length(x)-by-length(n) matrix
 
-l = 1; % Scale factor
-alpha = 1; % Global scale factor
+l = 0.3; % Scale factor
+alpha = sqrt(2); % Global scale factor
 epsilon = 1/(sqrt(2)*l); % Parameter depending on scale factor
 R = 1;
 
@@ -63,7 +63,7 @@ for eigv = n:2:n+1
 end
 
 % Classic GP
-l = 1; % Scale factor
+l = 0.1; % Scale factor
 epsilon = 1/(sqrt(2)*l); % Parameter depending on scale factor
 tic
 K = exp(-epsilon^2*pdist2(x', x').^2);
@@ -122,8 +122,10 @@ function [ K_tilde, K_approx, Ks_approx, idx_comb ] = approximateKernel(x, xp, n
         
         phip_comb(:,idx) = eigenFnct(xp(:,1), idx_comb(idx,1), ep, alpha).*...
             eigenFnct(xp(:,2), idx_comb(idx,2), ep, alpha);
-%         lambdap_comb(idx) = eigenValue(idx_comb(idx,1), ep, alpha)*eigenValue(idx_comb(idx,2), ep, alpha);
         
+
+
+% not used
 %         K_approx = K_approx + lambda_comb(idx)*phi_comb(:,idx_comb(idx,1))* ...
 %             phi_comb(:,idx_comb(idx,2))'; % WRONG! I ALREADY DID THE COMBINATIONS OF PHI, AND
         % THE SUMMATION IS OVER THE SAME INDEX bold n!!!
@@ -136,6 +138,15 @@ function [ K_tilde, K_approx, Ks_approx, idx_comb ] = approximateKernel(x, xp, n
 %             inv_SigmaN*phi_comb(:,idx_comb(idx,2));
     end
 %     toc
+
+    phi_comb = eigenFnct(x(:,1), idx_comb(:,1)', ep, alpha).*...
+            eigenFnct(x(:,2), idx_comb(:,2)', ep, alpha);
+        
+    phip_comb = eigenFnct(xp(:,1), idx_comb(:,1)', ep, alpha).*...
+            eigenFnct(xp(:,2), idx_comb(:,2)', ep, alpha);
+    lambda_comb = eigenValue(idx_comb(:,1), ep, alpha).*eigenValue(idx_comb(:,2), ep, alpha);
+    
+    
     inv_SigmaN = 1./1e-5*eye(size(x,1));
     Lambda_hat = phi_comb'*inv_SigmaN*phi_comb + diag(1./lambda_comb);
     
@@ -164,16 +175,39 @@ function phi = eigenFnct(x_1D, n_eigv, ep, alpha)
     % Compute the eigenfunction phi corresponding to the eigenvalue n_eigv
     % using one of the dimensions of x "x_1D".
     beta = (1 + (2*ep/alpha)^2)^0.25;
-    Gamma = sqrt(beta/(2^(n_eigv-1)*gamma(n_eigv)));
+    Gamma = sqrt(beta./(2.^(n_eigv-1).*gamma(n_eigv)));
     delta2 = alpha^2/2*(beta^2 - 1);
     
-    phi = Gamma*exp(-delta2*x_1D.^2).*hermiteH(n_eigv-1, alpha*beta*x_1D);
+    phi = exp(-delta2*x_1D.^2)*Gamma.*hermiteH(n_eigv-1, alpha*beta*x_1D);
 end
 
 function lambda = eigenValue(n_eigv, ep, alpha)
     % Decreasing eigenvalues computation
     beta = (1 + (2*ep/alpha)^2)^0.25;
     delta2 = alpha^2/2*(beta^2 - 1);
-    lambda = sqrt(alpha^2/(alpha^2 + delta2 + ep^2))*(ep^2/(alpha^2 + delta2 + ep^2))^(n_eigv-1);
+    lambda = sqrt(alpha^2/(alpha^2 + delta2 + ep^2))*(ep^2/(alpha^2 + delta2 + ep^2)).^(n_eigv-1);
 end
 
+function [y, H0] = hermiteH(n, x)
+
+    % Hermite polynomial function.
+    % n is the row vector of the desired degrees of the hermite polynomial,
+    % x is the column vector of the input. 
+    x = sqrt(2)*x;
+    y = zeros(size(x,1), length(n));
+    for j = 1:length(n)
+        H0 = 1;
+        H1 = [1,0];
+        for i = 1:n(j)
+            H0_1 = i * H0;
+            H0_2 = conv ( [0,0,1], H0_1 );
+            H2 = conv( [1,0], H1 ) - H0_2;
+            H0 = H1;
+            H1 = H2;
+        end
+        for i = 1:n(j)+1
+            y(:,j) = y(:,j) + x.^(n(j)+1-i) * H0(i);
+        end
+        y(:,j) = 2^(n(j)/2)*y(:,j);
+    end
+end

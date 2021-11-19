@@ -6,7 +6,7 @@
 clear
 
 % Define the points under consideration
-n = 10; % # of eigenvalues
+n = 3; % # of eigenvalues
 X = [linspace(-1,1,50); linspace(-1,1,50)]';
 [ X1, X2 ] = meshgrid(linspace(-1,1,50), linspace(-1,1,50));
 % X = [ X1(:), X2(:) ];
