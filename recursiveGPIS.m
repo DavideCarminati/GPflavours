@@ -51,9 +51,9 @@ y_all = y_first;
 % Initialize RGP
 
 K = kernelFnct(basVect, basVect, R);
-mu_g_old = -1 + zeros(size(basVect, 1),1); % Initial condition on ypred
+% mu_g_old = -1 + zeros(size(basVect, 1),1); % Initial condition on ypred
 mu_g_old = ypred';
-Cg_old = 10e2*eye(size(basVect,1));
+% Cg_old = 10e2*eye(size(basVect,1));
 Cg_old = ysd;
 % K_inv = inv(K);
 
@@ -80,7 +80,7 @@ for ii = 1:5
     B = Kss - J*Ks';
     Cp = B + J*Cg_old*J';
     % Update
-    G = Cg_old*J'/(Cp + 0*ones(size(Cp))); % gain matrix, inversion of a matrix big as the batch used
+    G = Cg_old*J'/(Cp + 1e-4*eye(size(Cp))); % gain matrix, inversion of a matrix big as the batch used
     mu_g = mu_g_old + G*(y_batch - mu_p);
     Cg = Cg_old - G*J*Cg_old;
     mu_g_old = mu_g;
