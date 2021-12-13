@@ -1,7 +1,7 @@
 %% Fast approximate Gaussian Process (FAGP)
 
 clear
-% 
+% % 
 % [x1, x2, button] = ginput(30);
 % % mouse left: space; 
 % %       middle: countour; 
@@ -39,18 +39,19 @@ X = [ X1(:), X2(:) ];
 %     it returns a length(x)-by-length(n) matrix
 
 l = 0.3; % Scale factor
-alpha = sqrt(2); % Global scale factor
+alpha = 1;%sqrt(2); % Global scale factor
 epsilon = 1/(sqrt(2)*l); % Parameter depending on scale factor
 R = 1;
 
-for eigv = n:2:n+1
+for eigv = 1:2:n+1
     tic
-    [ K_tilde, K_app, Ks_app, indices ] = approximateKernel(x', X, eigv, epsilon, alpha);
+    [ K_tilde, cov_ys, K_app, Ks_app, indices ] = approximateKernel(x', X, eigv, epsilon, alpha);
 
     ys = K_tilde*y';
     toc
 
     figure
+    subplot(1,2,1)
     hold on
     surface(X1, X2, reshape(ys, 50, 50) - max(ys), 'FaceColor','interp','EdgeColor','interp');
     % quiver(xs(1,:), xs(2,:), ys_grad(1,:), ys_grad(2,:),'color',[.2 .2 .2]);
@@ -59,7 +60,19 @@ for eigv = n:2:n+1
     plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
     contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
     title(['FAGP using ', num2str(eigv), ' eigenvalues'])
-    hold off
+    axis equal
+    subplot(1,2,2)
+    hold on
+    surface(X1, X2, reshape(diag(cov_ys), 50, 50) - 0*max(diag(cov_ys)), 'FaceColor','interp','EdgeColor','interp');
+    % quiver(xs(1,:), xs(2,:), ys_grad(1,:), ys_grad(2,:),'color',[.2 .2 .2]);
+    plot(x(1,y==1), x(2,y==1), '.','markersize',28,'color',[.8 0 0]); %Interior points
+    plot(x(1,y==0), x(2,y==0), '.','markersize',28,'color',[.8 .4 0]); %Border points
+    plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
+    contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
+    axis equal
+    drawnow
+%     hold off
+    pause(2);
 end
 
 % Classic GP
@@ -68,12 +81,14 @@ epsilon = 1/(sqrt(2)*l); % Parameter depending on scale factor
 tic
 K = exp(-epsilon^2*pdist2(x', x').^2);
 Ks = exp(-epsilon^2*pdist2(X, x').^2);
+Kss = exp(-epsilon^2*pdist2(X, X).^2);
 
 % Thin plate cov
 % K = 2*abs(pdist2(x', x').^3) - 3*R*pdist2(x', x').^2 + R^3;
 % Ks = 2*abs(pdist2(X, x').^3) - 3*R*pdist2(X, x').^2 + R^3;
 
 ys_std = Ks/K*y';
+cov_std = Kss - Ks/K*Ks';
 toc
 % ys2 = Ks_app/K_app*y';
 
@@ -88,6 +103,7 @@ toc
 % contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
         
 figure
+subplot(1,2,1)
 hold on
 surface(X1, X2, reshape(ys_std, 50, 50) - max(ys_std), 'FaceColor','interp','EdgeColor','interp');
 plot(x(1,y==1), x(2,y==1), '.','markersize',28,'color',[.8 0 0]); %Interior points
@@ -95,10 +111,17 @@ plot(x(1,y==0), x(2,y==0), '.','markersize',28,'color',[.8 .4 0]); %Border point
 plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
 contour(X1, X2, reshape(ys_std, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
 title('Classic GP formula');
+subplot(1,2,2)
+hold on
+surface(X1, X2, reshape(diag(cov_std), 50, 50) - max(diag(cov_std)), 'FaceColor','interp','EdgeColor','interp');
+plot(x(1,y==1), x(2,y==1), '.','markersize',28,'color',[.8 0 0]); %Interior points
+plot(x(1,y==0), x(2,y==0), '.','markersize',28,'color',[.8 .4 0]); %Border points
+plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
+contour(X1, X2, reshape(ys_std, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
 
 %% Approximated Gaussian Kernel
 
-function [ K_tilde, K_approx, Ks_approx, idx_comb ] = approximateKernel(x, xp, n, ep, alpha)
+function [ K_tilde, covariance, K_approx, Ks_approx, idx_comb ] = approximateKernel(x, xp, n, ep, alpha)
 
     % Combinations
     [ index1, index2 ] = ndgrid(1:n, 1:n);
@@ -151,6 +174,7 @@ function [ K_tilde, K_approx, Ks_approx, idx_comb ] = approximateKernel(x, xp, n
     Lambda_hat = phi_comb'*inv_SigmaN*phi_comb + diag(1./lambda_comb);
     
     K_tilde = phip_comb*diag(lambda_comb)*phi_comb'*(inv_SigmaN - inv_SigmaN*phi_comb/Lambda_hat*phi_comb'*inv_SigmaN);
+    covariance = phip_comb*diag(lambda_comb)*phip_comb' - K_tilde*phi_comb*diag(lambda_comb)*phip_comb';
     
 %     for idx = 1:size(idx_comb,1)
 %         K1_tilde = K1_tilde + phip_comb(:,idx_comb(idx,1))* ...
