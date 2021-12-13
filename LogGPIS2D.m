@@ -37,9 +37,11 @@ X = [ X1(:), X2(:) ];
 
 % [ K_tilde, K ] = kernelFnct2D(x, x, R, 'ThinPlate');
 % [ Ks_tilde, Ks ] = kernelFnct2D(X, x, R, 'ThinPlate');
+% [ Kss_tilde, Kss ] = kernelFnct2D(X, X, R, 'ThinPlate');
 
 [ K_tilde, K ] = kernelFnct2D(x, x, R, 'RBF');
 [ Ks_tilde, Ks ] = kernelFnct2D(X, x, R, 'RBF');
+[ Kss_tilde, Kss ] = kernelFnct2D(X, X, R, 'RBF');
 
 y = zeros(size(x, 1), 1);
 % y = [ 0; 0; 0; 0; 0; 0; 0; 0 ];
@@ -68,6 +70,7 @@ dy = [ 1; sqrt(2)/2; 0; -sqrt(2)/2; -1; -sqrt(2)/2; 0; sqrt(2)/2; zeros(2*wallPo
 
 y = exp(-y*lambda);% + noise*randn(size(x, 1), 1);
 mu_g = Ks_tilde / K_tilde * [y; dy];
+cov = Kss_tilde - Ks_tilde/K_tilde*Ks_tilde';
 
 % Without gradient information
 mu2 = Ks/K*y;
@@ -88,11 +91,14 @@ doublingIndex = floor(1:0.5:numTest^2+0.5); % creating index vector looking like
 normlz = sqrt(mu_g(numTest^2+1:2*numTest^2).^2 + mu_g(2*numTest^2+1:end).^2);
 grad = -mu_g(numTest^2+1:end)./(normlz(doublingIndex)*lambda);
 
+% dist_cov = 1./(lambda*mu_g(1:numTest^2))'*cov(1:numTest^2,1:numTest^2)*(1./(lambda*mu_g(1:numTest^2)));
+dist_cov = (1./(lambda*mu_g(1:numTest^2))).^2.*cov(1:numTest^2,1:numTest^2);
+
 % Rotate the gradients so that they are normal to surfaces
-theta = -pi/2;
-rot = [ cos(theta)*eye(numTest^2), sin(theta)*eye(numTest^2); ...
-        -sin(theta)*eye(numTest^2), cos(theta)*eye(numTest^2) ];
-grad = rot*grad;
+% theta = -pi/2;
+% rot = [ cos(theta)*eye(numTest^2), sin(theta)*eye(numTest^2); ...
+%         -sin(theta)*eye(numTest^2), cos(theta)*eye(numTest^2) ];
+% grad = rot*grad;
 
 theta = 0*-pi/2;
 rot = [ cos(theta)*eye(length(dy)/2), sin(theta)*eye(length(dy)/2); ...
@@ -116,7 +122,27 @@ ylabel('x_2 [m]')
 xlim([0, 5])
 ylim([0, 5])
 colorbar%('Ticks', [min(diag(ysd))-max(diag(ysd)), 0])
+title('Predictive mean')
 % view(3)
+
+figure
+hsurf_cov = surface(X1, X2, reshape(diag(dist_cov), numTest, numTest) - 0*max(diag(dist_cov)), 'FaceColor','interp','EdgeColor','interp');
+% colormap gray;
+% imagesc(linspace(0,5,numTest), linspace(0,5,numTest), reshape(dist, numTest, numTest));
+hold on
+plot(x(:,1), x(:,2), '.','markersize',28,'color',[.7 0.3 0]); %Interior points
+quiver(x(:,1), x(:,2), dy_normal(1:length(y)), dy_normal(length(y)+1:end), 0.5 , 'g');
+contour(X1, X2, reshape(dist, numTest, numTest), [0,0], 'w');
+% quiver(X(:,1), X(:,2), grad(1:numTest^2), grad(numTest^2+1:end), 'w');
+% set(gca, 'Layer', 'top')
+hsurf_cov.Annotation.LegendInformation.IconDisplayStyle = 'off';
+legend('Obstacle border', 'Normal to border')
+xlabel('x_1 [m]')
+ylabel('x_2 [m]')
+xlim([0, 5])
+ylim([0, 5])
+colorbar%('Ticks', [min(diag(ysd))-max(diag(ysd)), 0])
+title('Predictive covariance')
 
 figure
 surface(X1, X2, reshape((mu_g(1:numTest^2)), numTest, numTest), 'FaceColor','interp','EdgeColor','interp');
