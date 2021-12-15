@@ -4,11 +4,16 @@
 % if referred to a single point.
 clear
 noise = 1e-3;
-lambda = 30/1;
-numTest = 50;
+numTest = 40;
 wallPoints = 10;
-% R = 5;
-R = 1; % length scale for RBF kernel
+lambda = 50;
+R = sqrt(5)/lambda; % Kernels length scale
+
+% Test points
+[ X1, X2 ] = meshgrid(linspace(0,5,numTest), linspace(0,5,numTest));
+X = [ X1(:), X2(:) ];
+
+% Placing obstacles and/or walls
 circleRadius = 0.5;
 x = [2.5, 2.5] + circleRadius * [cos(-pi:pi/4:(pi-1e-3))', sin(-pi:pi/4:(pi-1e-3))'];
 x2 = [4, 1] + 1.25*circleRadius * [cos(-pi:pi/4:(pi-1e-3))', sin(-pi:pi/4:(pi-1e-3))'];
@@ -16,35 +21,18 @@ x2 = [4, 1] + 1.25*circleRadius * [cos(-pi:pi/4:(pi-1e-3))', sin(-pi:pi/4:(pi-1e
 % x = [ x; x2 ];
 
 % Square room with circle obstacle:
-x = [ x;
-      linspace(0.6, 4.4, wallPoints)', 0.5*ones(wallPoints,1);
-      linspace(0.6, 4.4, wallPoints)', 4.5*ones(wallPoints,1);
-      0.5*ones(wallPoints,1), linspace(0.6, 4.4, wallPoints)';
-      4.5*ones(wallPoints,1), linspace(0.6, 4.4, wallPoints)' ]; % working well with rbf kernel
+% x = [ x;
+%       linspace(0.6, 4.4, wallPoints)', 0.5*ones(wallPoints,1);
+%       linspace(0.6, 4.4, wallPoints)', 4.5*ones(wallPoints,1);
+%       0.5*ones(wallPoints,1), linspace(0.6, 4.4, wallPoints)';
+%       4.5*ones(wallPoints,1), linspace(0.6, 4.4, wallPoints)' ]; % working well with rbf kernel
 
 % x = [ x;
-%       0, 2;
-%       2, 0;
-%       5, 2;
-%       2, 5 ];
-
-% x = [ 2, 4;
-%       3, 3;
-%       4.5, 3.5 ];
-
-[ X1, X2 ] = meshgrid(linspace(0,5,numTest), linspace(0,5,numTest));
-X = [ X1(:), X2(:) ];
-
-% [ K_tilde, K ] = kernelFnct2D(x, x, R, 'ThinPlate');
-% [ Ks_tilde, Ks ] = kernelFnct2D(X, x, R, 'ThinPlate');
-% [ Kss_tilde, Kss ] = kernelFnct2D(X, X, R, 'ThinPlate');
-
-[ K_tilde, K ] = kernelFnct2D(x, x, R, 'RBF');
-[ Ks_tilde, Ks ] = kernelFnct2D(X, x, R, 'RBF');
-[ Kss_tilde, Kss ] = kernelFnct2D(X, X, R, 'RBF');
+%       0, 0 ];
 
 y = zeros(size(x, 1), 1);
-% y = [ 0; 0; 0; 0; 0; 0; 0; 0 ];
+
+% y(end) = sqrt(2)*2;
 
 % dy = [ 0; sqrt(2)/2; 1; sqrt(2)/2; 0; -sqrt(2)/2; -1; -sqrt(2)/2; % Gradient along x1
 %         -1; -sqrt(2)/2; 0; sqrt(2)/2; 1; sqrt(2)/2; 0; -sqrt(2)/2 ]; % Gradient along x2
@@ -57,22 +45,39 @@ y = zeros(size(x, 1), 1);
 
 dy = -[ -1; -sqrt(2)/2; 0; sqrt(2)/2; 1; sqrt(2)/2; 0; -sqrt(2)/2;
         0; -sqrt(2)/2; -1; -sqrt(2)/2; 0; sqrt(2)/2; 1; sqrt(2)/2 ]; % Normal to obstacle border
+    
+% dy = -[ -1; -sqrt(2)/2; 0; sqrt(2)/2; 1; sqrt(2)/2; 0; -sqrt(2)/2; -sqrt(2)/2;
+%         0; -sqrt(2)/2; -1; -sqrt(2)/2; 0; sqrt(2)/2; 1; sqrt(2)/2; -sqrt(2)/2 ]; % Normal to obstacle border
 
 % dy = [ dy(1:length(dy)/2); dy(1:length(dy)/2); dy(length(dy)/2+1:end); dy(length(dy)/2+1:end) ];
 
-% Square room with circle obstacle:
-% dy = [ 0; sqrt(2)/2; 1; sqrt(2)/2; 0; -sqrt(2)/2; -1; -sqrt(2)/2; -ones(wallPoints,1); ones(wallPoints,1); zeros(2*wallPoints,1);
-%         -1; -sqrt(2)/2; 0; sqrt(2)/2; 1; sqrt(2)/2; 0; -sqrt(2)/2; zeros(2*wallPoints,1); ones(wallPoints,1); -ones(wallPoints,1)]; 
-
 % Square room with circle obstacle - normal to obst
-dy = [ 1; sqrt(2)/2; 0; -sqrt(2)/2; -1; -sqrt(2)/2; 0; sqrt(2)/2; zeros(2*wallPoints,1); -ones(wallPoints,1); ones(wallPoints,1);
-        0; sqrt(2)/2; 1; sqrt(2)/2; 0; -sqrt(2)/2; -1; -sqrt(2)/2; -ones(wallPoints,1); ones(wallPoints,1); zeros(2*wallPoints,1) ]; 
+% dy = [ 1; sqrt(2)/2; 0; -sqrt(2)/2; -1; -sqrt(2)/2; 0; sqrt(2)/2; zeros(2*wallPoints,1); -ones(wallPoints,1); ones(wallPoints,1);
+%         0; sqrt(2)/2; 1; sqrt(2)/2; 0; -sqrt(2)/2; -1; -sqrt(2)/2; -ones(wallPoints,1); ones(wallPoints,1); zeros(2*wallPoints,1) ]; 
 
+% Kernel selection
+
+% TP kernel gives a wrong distance representation
+% [ K_tilde, K ] = kernelFnct2D(x, x, R, 'ThinPlate');
+% [ Ks_tilde, Ks ] = kernelFnct2D(X, x, R, 'ThinPlate');
+% [ Kss_tilde, Kss ] = kernelFnct2D(X, X, R, 'ThinPlate');
+
+% RBF kernel overestimates the distance
+% [ K_tilde, K ] = kernelFnct2D(x, x, R, 'RBF');
+% [ Ks_tilde, Ks ] = kernelFnct2D(X, x, R, 'RBF');
+% [ Kss_tilde, Kss ] = kernelFnct2D(X, X, R, 'RBF');
+
+% Matérn 5/2 kernel is the best and is two-times differentiable
+[ K_tilde, K ] = kernelFnct2D(x, x, R, 'Matern');
+[ Ks_tilde, Ks ] = kernelFnct2D(X, x, R, 'Matern');
+[ Kss_tilde, Kss ] = kernelFnct2D(X, X, R, 'Matern');
+
+% Log GPIS
 y = exp(-y*lambda);% + noise*randn(size(x, 1), 1);
 mu_g = Ks_tilde / K_tilde * [y; dy];
 cov = Kss_tilde - Ks_tilde/K_tilde*Ks_tilde';
 
-% Without gradient information
+% GP without gradient information
 mu2 = Ks/K*y;
 dist2 = -(1 / lambda) * real(log((mu2)));
 
@@ -93,6 +98,7 @@ grad = -mu_g(numTest^2+1:end)./(normlz(doublingIndex)*lambda);
 
 % dist_cov = 1./(lambda*mu_g(1:numTest^2))'*cov(1:numTest^2,1:numTest^2)*(1./(lambda*mu_g(1:numTest^2)));
 dist_cov = (1./(lambda*mu_g(1:numTest^2))).^2.*cov(1:numTest^2,1:numTest^2);
+% dist_cov = cov(1:numTest^2,1:numTest^2);
 
 % Rotate the gradients so that they are normal to surfaces
 % theta = -pi/2;
@@ -100,47 +106,38 @@ dist_cov = (1./(lambda*mu_g(1:numTest^2))).^2.*cov(1:numTest^2,1:numTest^2);
 %         -sin(theta)*eye(numTest^2), cos(theta)*eye(numTest^2) ];
 % grad = rot*grad;
 
-theta = 0*-pi/2;
-rot = [ cos(theta)*eye(length(dy)/2), sin(theta)*eye(length(dy)/2); ...
-        -sin(theta)*eye(length(dy)/2), cos(theta)*eye(length(dy)/2) ];
-dy_normal = rot*dy;
-
 figure
 hsurf = surface(X1, X2, reshape(dist, numTest, numTest) - 0*max(dist), 'FaceColor','interp','EdgeColor','interp');
 % colormap gray;
-% imagesc(linspace(0,5,numTest), linspace(0,5,numTest), reshape(dist, numTest, numTest));
 hold on
 plot(x(:,1), x(:,2), '.','markersize',28,'color',[.7 0.3 0]); %Interior points
-quiver(x(:,1), x(:,2), dy_normal(1:length(y)), dy_normal(length(y)+1:end), 0.5 , 'g');
+quiver(x(:,1), x(:,2), dy(1:length(y)), dy(length(y)+1:end), 0.5 , 'g');
 contour(X1, X2, reshape(dist, numTest, numTest), [0,0], 'w');
 % quiver(X(:,1), X(:,2), grad(1:numTest^2), grad(numTest^2+1:end), 'w');
-% set(gca, 'Layer', 'top')
 hsurf.Annotation.LegendInformation.IconDisplayStyle = 'off';
 legend('Obstacle border', 'Normal to border')
 xlabel('x_1 [m]')
 ylabel('x_2 [m]')
-xlim([0, 5])
-ylim([0, 5])
+% xlim([0, 5])
+% ylim([0, 5])
 colorbar%('Ticks', [min(diag(ysd))-max(diag(ysd)), 0])
 title('Predictive mean')
 % view(3)
 
 figure
-hsurf_cov = surface(X1, X2, reshape(diag(dist_cov), numTest, numTest) - 0*max(diag(dist_cov)), 'FaceColor','interp','EdgeColor','interp');
+hsurf_cov = surface(X1, X2, reshape(min(10,diag(dist_cov)), numTest, numTest) - 0*max(min(100,diag(dist_cov))), 'FaceColor','interp','EdgeColor','interp');
 % colormap gray;
-% imagesc(linspace(0,5,numTest), linspace(0,5,numTest), reshape(dist, numTest, numTest));
 hold on
 plot(x(:,1), x(:,2), '.','markersize',28,'color',[.7 0.3 0]); %Interior points
-quiver(x(:,1), x(:,2), dy_normal(1:length(y)), dy_normal(length(y)+1:end), 0.5 , 'g');
+quiver(x(:,1), x(:,2), dy(1:length(y)), dy(length(y)+1:end), 0.5 , 'g');
 contour(X1, X2, reshape(dist, numTest, numTest), [0,0], 'w');
 % quiver(X(:,1), X(:,2), grad(1:numTest^2), grad(numTest^2+1:end), 'w');
-% set(gca, 'Layer', 'top')
 hsurf_cov.Annotation.LegendInformation.IconDisplayStyle = 'off';
 legend('Obstacle border', 'Normal to border')
 xlabel('x_1 [m]')
 ylabel('x_2 [m]')
-xlim([0, 5])
-ylim([0, 5])
+% xlim([0, 5])
+% ylim([0, 5])
 colorbar%('Ticks', [min(diag(ysd))-max(diag(ysd)), 0])
 title('Predictive covariance')
 
@@ -150,7 +147,16 @@ hold on
 plot(x(:,1), x(:,2), '.','markersize',28,'color',[.8 0 0]); %Interior points
 xlabel('x_1 [m]')
 ylabel('x_2 [m]')
-title('Classic GP');
+title('Classic GP before log transform');
+
+figure
+surface(X1, X2, reshape(dist2, numTest, numTest), 'FaceColor','interp','EdgeColor','interp')
+title('GP without gradient information')
+
+figure
+dist_1d = diag(reshape(dist, numTest, numTest));
+plot(linspace(0, 5, numTest), dist_1d)
+title('Distance from 0,0 to 5,5')
 
 function [ K_tilde, K ] = kernelFnct2D(x1, x2, R, Kerneltype)
 
@@ -187,6 +193,29 @@ function [ K_tilde, K ] = kernelFnct2D(x1, x2, R, Kerneltype)
                 (-1/R^4*pairwiseDiff(x1(:,1), x2(:,1)).*pairwiseDiff(x1(:,2), x2(:,2))).*K; 
                 (-1/R^4*pairwiseDiff(x1(:,2), x2(:,2)).*pairwiseDiff(x1(:,1), x2(:,1))).*K, ...
                 (1/R^2 - 1/R^4*pairwiseDiff(x1(:,2), x2(:,2)).*pairwiseDiff(x1(:,2), x2(:,2))).*K ];
+        K_tilde = [ K, dKx2; dKx1, ddK ];
+    elseif strcmp(Kerneltype, 'Matern')
+        sigma = 1;
+        K = sigma*(1 + sqrt(5)/R*pdist2(x1, x2) + 5/(3*R^2)*pdist2(x1, x2).^2).*...
+            exp(-sqrt(5)/R*pdist2(x1, x2));
+        dKx1 = [ exp(-sqrt(5)/R*pdist2(x1, x2)).*(5/R^2*pairwiseDiff(x1(:,1), x2(:,1)).*...
+                    (2/3*pdist2(x1, x2) - 1 - sqrt(5)/(3*R)*pdist2(x1, x2)));
+                 exp(-sqrt(5)/R*pdist2(x1, x2)).*(5/R^2*pairwiseDiff(x1(:,2), x2(:,2)).*...
+                    (2/3*pdist2(x1, x2) - 1 - sqrt(5)/(3*R)*pdist2(x1, x2))) ];
+        dKx2 = [ -(exp(-sqrt(5)/R*pdist2(x1, x2)).*(5/R^2*pairwiseDiff(x1(:,1), x2(:,1)).*...
+                    (2/3*pdist2(x1, x2) - 1 - sqrt(5)/(3*R)*pdist2(x1, x2)))), ...
+                 -(exp(-sqrt(5)/R*pdist2(x1, x2)).*(5/R^2*pairwiseDiff(x1(:,1), x2(:,1)).*...
+                    (2/3*pdist2(x1, x2) - 1 - sqrt(5)/(3*R)*pdist2(x1, x2)))) ];
+        ddK = [ exp(-sqrt(5)/R*pdist2(x1, x2)).*(sqrt(5)/R*pairwiseDiff(x1(:,1),x2(:,1))./(pdist2(x1,x2) + 1e-6) + ...
+                    (-10/(3*R^2) + 5*sqrt(5)/(3*R^3))*pdist2(x1,x2) + (10/(3*R^2) - 5*sqrt(5)/(3*R^3))* ...
+                    pairwiseDiff(x1(:,1),x2(:,1)).^2./(pdist2(x1,x2) + 1e-6) + 5/R^2), ...
+                exp(-sqrt(5)/R*pdist2(x1, x2)).*(sqrt(5)/R*pairwiseDiff(x1(:,2),x2(:,2))./(pdist2(x1,x2) + 1e-6) - ...
+                    (10/(3*R^2) + 5*sqrt(5)/(3*R^3))*pairwiseDiff(x1(:,1),x2(:,1)).*pairwiseDiff(x1(:,2),x2(:,2)))./(pdist2(x1,x2) + 1e-6);
+                exp(-sqrt(5)/R*pdist2(x1, x2)).*(sqrt(5)/R*pairwiseDiff(x1(:,1),x2(:,1))./(pdist2(x1,x2) + 1e-6) - ...
+                    (10/(3*R^2) + 5*sqrt(5)/(3*R^3))*pairwiseDiff(x1(:,1),x2(:,1)).*pairwiseDiff(x1(:,2),x2(:,2)))./(pdist2(x1,x2) + 1e-6), ...
+                exp(-sqrt(5)/R*pdist2(x1, x2)).*(sqrt(5)/R*pairwiseDiff(x1(:,2),x2(:,2))./(pdist2(x1,x2) + 1e-6) + ...
+                    (-10/(3*R^2) + 5*sqrt(5)/(3*R^3))*pdist2(x1,x2) + (10/(3*R^2) - 5*sqrt(5)/(3*R^3))* ...
+                    pairwiseDiff(x1(:,2),x2(:,2)).^2./(pdist2(x1,x2) + 1e-6) + 5/R^2) ];
         K_tilde = [ K, dKx2; dKx1, ddK ];
     else
         error('Kernel type not recognized')
