@@ -1,0 +1,175 @@
+\documentclass[10pt,a4paper,twocolumn]{article}
+\usepackage{graphicx,amsmath,amssymb,bm,xcolor,listings} %navigator
+%\RestyleAlgo{ruled}
+%\soulregister\cite7
+%\soulregister\ref7
+
+\definecolor{rr}{rgb}{.8,0,0}
+\definecolor{rr2}{rgb}{1,.6,.6}
+\definecolor{gg}{rgb}{0,.6,0}
+\definecolor{bb}{rgb}{0,0,.8}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+%\usepackage{sectsty}
+%\sectionfont{\color{rr}\large}
+%\subsectionfont{\color{rr}\normalsize}
+%\subsubsectionfont{\color{rr}\normalsize}
+%\makeatletter
+%\renewcommand\@seccntformat[1]{%
+%	\colorbox{rr}{\textcolor{white}{\csname the#1\endcsname}}%
+%	\,
+%}
+\makeatother
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\ttfamily\scriptsize,
+	breakatwhitespace=false,         
+	breaklines=true,       
+	captionpos=b,                    
+	keepspaces=true,                                     
+	numbersep=5pt,                  
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+\lstset{style=mystyle}
+
+%\newcommand{\hlm}[1]{\colorbox{yellow}{$\displaystyle #1$}}
+
+\usepackage{geometry}
+\geometry{a4paper, right=1.5cm, bottom=2.0cm, textwidth=18cm, textheight=26.0cm, marginparsep=7pt, marginparwidth=.6in}
+\setlength{\columnsep}{8mm}
+%\setlength\parindent{0in}
+
+\newcommand{\trsp}{{\scriptscriptstyle\top}}
+\newcommand{\psin}{{\dagger}}
+\newcommand{\tp}[1]{\text{\tiny#1}}
+\newcommand{\ty}[1]{{\scriptscriptstyle{#1}}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\cov}{\mathrm{cov}}
+\newcommand{\tmin}{{\scriptscriptstyle\min}}
+\newcommand{\tmax}{{\scriptscriptstyle\max}}
+%\newcommand{\filename}[1]{{\raggedleft\colorbox{rr2}{{\color{white}\texttt{#1}}}\\[2mm]}}
+\newcommand{\filename}[1]{\colorbox{rr2}{\color{white}\texttt{#1}}}
+
+\usepackage{hyperref}
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue,
+	filecolor=magenta,      
+	urlcolor=cyan,
+	pdftitle={Overleaf Example},
+	pdfpagemode=FullScreen,
+}
+
+\title{\huge Gaussian Process Flavours}
+\author{Davide Carminati}
+\date{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+	
+\maketitle
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Kernel Eigenvalue Decomposition}
+The kernel series approximation relies on \textit{Mercer's expansion}:
+\begin{equation}\label{eq:mercer}
+	K_{(\mathbf{x}, \mathbf{z})} = \sum_{n=0}^{\infty} \lambda_n \varphi_n(\mathbf{x}) \varphi_n(\mathbf{z})
+\end{equation}
+in which $\lambda_n$ and $\varphi_n$ are the \textit{n-th} eingenvalue and eigenfunction, respectively.
+Using a finite series approximation, a Gaussian Process kernel can be written as:
+\begin{equation}
+	K_{(\mathbf{x}, \mathbf{z})} \approx \sum_{n=0}^{m} \lambda_n \varphi_n(\mathbf{x}) \varphi_n(\mathbf{z})
+\end{equation}
+where $m$ is the number of eigenvalues considered. $m$ is much smaller than the number of datapoints $\mathbf{x}_1 \ldots \mathbf{x}_N$. The advantage is that we consider a much smaller kernel $K_{approx} \in \mathrm{R}^{m \times m}$ to be inverted, instead of the classical $K \in \mathrm{R}^{N \times N}$.
+\subsection{Squared Exponential kernel decomposition}
+The \textit{Squared Exponential} kernel is defined as:
+\begin{equation}
+	K_{(x,x')} = \exp^ {-\varepsilon^2 (x - x')^2 }
+\end{equation}
+Setting:
+\small
+\begin{align}
+	 \beta &= \left(1 + \left(\frac{2\varepsilon}{\alpha}\right)^2\right)^\frac{1}{4}, && \gamma_n = \sqrt{\frac{\beta}{2^{n-1}\Gamma_{(n)}}}, && \delta^2 = \frac{\alpha}{2}(\beta^2-1),
+\end{align}
+\normalsize
+the \textit{Squared Exponential} kernel can be decomposed using \autoref{eq:mercer} and one obtains the eigenfunctions:
+% \cite{fasshauer2011positive}:
+\begin{equation}
+	\varphi_n(x) = \gamma_n \exp^{-\delta^2 x^2} H_{n-1}(\alpha \beta x)
+\end{equation}
+where $H_{n-1}$ is the \textit{classical} Hermite polynomial of degree $n-1$.
+Their corresponding \textit{eigenvalues} are defined as:
+\begin{equation}
+	\lambda_n = \sqrt{\frac{\alpha^2}{\alpha^2 + \delta^2 + \varepsilon^2}} \left(\frac{\varepsilon^2}{\alpha^2 + \delta^2 + \varepsilon^2} \right)^{n-1}
+\end{equation}
+\subsection{Multivariate expansion}
+The $d$-variate squared exponential kernel is defined as:
+\begin{equation}
+	K_{\mathbf{x}, \mathbf{x'}} = \exp^{-\varepsilon_1^2\left(x_1 - x'_1\right)^2  - \ldots - \varepsilon_d^2\left(x_d - x'_d\right)^2}
+\end{equation}
+For $d$-variate kernels it holds the following expansion:
+\begin{equation}
+	K_{\mathbf{x},\mathbf{x'}} =  \sum_{\mathbf{n}\in \mathbb{N}^d} \lambda_{\mathbf{n}} \varphi_{\mathbf{n}}(x) \varphi_{\mathbf{n}}(x')
+	\end{equation}
+where $\mathbf{n}$ is the set of all $n^d$ combination of the considered number of eigenvalues.
+The eigenvalues $\lambda_{\mathbf{n}}$ and eigenfunctions $\varphi_{\mathbf{n}}(\mathbf{x})$ are defined as:
+% in \cite{fasshauer2012stable}:
+\begin{align}
+	\lambda_{\mathbf{n}} &= \prod_{j=1}^{d} \lambda_{n_j} \\
+	\varphi_{\mathbf{n}}(\mathbf{x}) &= \prod_{j=1}^{d} \varphi_{n_{j}}(x_j)
+\end{align}
+where $d$ is the number of dimensions. For the 2D case, $\mathbf{x} \in \mathrm{R}^{N \times d}$, $ \varphi_{\mathbf{n}} \in \mathrm{R}^{N}$.
+	
+\section{Gaussian Process Implicit Surface}
+Gaussian Process Implicit Surface (GPIS) allows the modeling of obstacles in environments by imposing a suitable $y$ value to the regression problem. In particular, each $\mathbf{x}$ point has a value
+\begin{equation}
+	y = 
+	\begin{cases}
+		-1 & \text{outside obstacle}\\
+		0 & \text{on the edge}\\
+		1 & \text{inside obstacle}
+	\end{cases}
+\end{equation}
+Given a train dataset $ \{ (\mathbf{x}_i, y_i) \}_{i=1}^N$, with $\mathbf{x}_i \in \mathbf{X}$ and $y_i \in \mathbf{y}$ and a test dataset $\{ (\mathbf{x}_{*i}, y_{*i}) \}_{i=1}^M$, with $\mathbf{x}_{*i} \in \mathbf{X_*}$, the kernels are written as:
+\small
+\begin{align}
+	\mathbf{K} = K(\mathbf{X},\mathbf{X}), && \mathbf{k_*} = K(\mathbf{X_*},\mathbf{X}), && \mathbf{k_{**}} = K(\mathbf{X_*},\mathbf{X_*})
+\end{align}
+\normalsize
+The GP regression problem is as follows:
+\begin{align}
+	\mathbf{\bar{f}_*} &= \mathbf{k}_*[\mathbf{K} + \sigma_n^2 \mathrm{I}]^{-1}\mathbf{y}\\    
+	\cov(\mathbf{f}_*) &= \mathbf{k}_{**} - \mathbf{k}_*[\mathbf{K} + \sigma_n^2 \mathrm{I}]^{-1}\mathbf{k}_*^T
+\end{align}
+where $\mathbf{\bar{f}_*}$ is the prediction on the test dataset and $\cov(\mathbf{f}_*)$ is the associated uncertainty on the prediction.
+In the classic GPIS algorithms, the \textit{Square Exponential} kernel (\autoref{eq:sekernel}) and the \textit{Thin Plate} kernel (\autoref{eq:tpkernel}) are used.
+\begin{equation}\label{eq:sekernel}
+	K_{(x,x')} = \exp^ {\frac{(x - x')^2}{2l^2} }
+\end{equation}
+\begin{equation}\label{eq:tpkernel}
+	K_{(x,x')} = 2\|x - x'\|^3 - 3R \|x - x'\|^2 + R^3
+\end{equation}
+where $l$ is the kernel \textit{lenght scale} and $R$ is the maximum distance between datapoints.
+
+\section{GP with gradient information}
+\section{Fast Approximate GPIS}	
+
+\section{Logarithmic GPIS}
+
+\section{Recursive GPIS}
+\end{document}

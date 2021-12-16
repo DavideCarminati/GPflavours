@@ -1,3 +1,9 @@
 *.asv
 *.png
 sigmapointsprova.m
+*.aux
+*.log
+*.synctex.gz
+*.bbl
+*.blg
+*.out
