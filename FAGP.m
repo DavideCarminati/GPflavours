@@ -9,16 +9,62 @@ clear
 % x = [x1'; x2'];
 % y = button' - 2;
 
+% Complex obstacle
+
+circleRadius = 1;
+circleCenter = [ 2.5; 2.5 ];
+points = linspace(-pi,pi,100);%-pi:pi/24:(pi-1e-3);
+x_edge = circleCenter + (circleRadius + 0.1*sin(points*10) + 1e-5*randn(1,length(points))) .* [cos(points); sin(points)];
+y_edge = zeros(1,size(x_edge,2));
+
+x_full = 0.01*randn(2,1) + circleCenter;
+y_full = ones(size(x_full,2));
+
+num_free_points = 8;
+x1_free = zeros(1,num_free_points);
+x2_free = zeros(1,num_free_points);
+y_free = zeros(1,num_free_points);
+jj = 0;
+while jj < num_free_points
+%     rng(seed);
+    jj = jj + 1;
+    x1_free(jj) = 0.05 + 4.95*rand(1);
+    x2_free(jj) = 0.05 + 4.95*rand(1);
+    y_free(jj) = -1;
+    % Checking if some of the free points are inside obstacles
+    for idx = 1:size(circleCenter,2)
+        dist_from_ctr = pdist2([x1_free(jj)', x2_free(jj)'], circleCenter(:,idx)');
+        if dist_from_ctr <= circleRadius(idx) + 0.2
+            x1_free(jj) = 0;
+            x2_free(jj) = 0;
+            y_free(jj) = 0;
+            jj = jj - 1;
+            break
+        end
+    end
+end
+
+x = [ x_full, x_edge, [ x1_free; x2_free ] ]/5;
+y = [ y_full, y_edge, y_free ];
+
+figure
+hold on
+plot(x(1,y==1), x(2,y==1), '.','markersize',28,'color',[.8 0 0]); %Interior points
+plot(x(1,y==0), x(2,y==0), '.','markersize',28,'color',[.8 .4 0]); %Border points
+plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
+
+%%
+
 % x = [0.2, 0.4, 0.6, 0.4, 0.6, 0.9; ...
 %      0.5, 0.5, 0.5,  0.8, 0.1, 0.6];
 % y = [ -1,   0,   1,   -1,  -1,  -1];
-x = [0.2, 0.4, 0.6, 0.6, 0.9, 0.55, 0.66, 0.66, 0.79, 0.08, 0.12, 0.29, 0.87, 0.91; ...
-     0.5, 0.5, 0.5, 0.1, 0.6, 0.55, 0.54, 0.33, 0.58, 0.08, 0.30, 0.16, 0.12, 0.29];
+% x = [0.2, 0.4, 0.6, 0.6, 0.9, 0.55, 0.66, 0.66, 0.79, 0.08, 0.12, 0.29, 0.87, 0.91; ...
+%      0.5, 0.5, 0.5, 0.1, 0.6, 0.55, 0.54, 0.33, 0.58, 0.08, 0.30, 0.16, 0.12, 0.29];
 % x = [0.2, 0.4, 0.6; ...
 %      0, 0, 0]; % Aligned horizontally
 % x = [0.5, 0.5, 0.5; ...
 %      0.1, 0.5, 0.9]; % Aligned vertically
-y = [ -1,   0,   1,  -1,  -1,    1,    1,    0,    0,   -1,   -1,   -1,   -1,   -1];
+% y = [ -1,   0,   1,  -1,  -1,    1,    1,    0,    0,   -1,   -1,   -1,   -1,   -1];
 % x = [0.1, 0.5, 0.9]; % 1D case
 % y = [-1, 0, 1];
 % x = [0.35; 0.27];
@@ -26,6 +72,7 @@ y = [ -1,   0,   1,  -1,  -1,    1,    1,    0,    0,   -1,   -1,   -1,   -1,   
 
 % Define the points under consideration
 n = 10; % # of eigenvalues
+% with n = 30, alpha = 3
 % x = [0.2, 0.4, 0.6, 0.6, 0.9, 0.55, 0.66, 0.66, 0.79, 0.08, 0.12, 0.29, 0.87, 0.91; ...
 %      0.5, 0.5, 0.5, 0.1, 0.6, 0.55, 0.54, 0.33, 0.58, 0.08, 0.30, 0.16, 0.12, 0.29];
 % y = [ -1,   0,   1,  -1,  -1,    1,    1,    0,    0,   -1,   -1,   -1,   -1,   -1];
@@ -38,20 +85,20 @@ X = [ X1(:), X2(:) ];
 % phi accepts row vector n and column vector x
 %     it returns a length(x)-by-length(n) matrix
 
-l = 0.3; % Scale factor
-alpha = 1;%sqrt(2); % Global scale factor
+l = 0.1; % Scale factor
+alpha = 3;%sqrt(2); % Global scale factor
 epsilon = 1/(sqrt(2)*l); % Parameter depending on scale factor
 R = 1;
 
-for eigv = 1:2:n+1
+for eigv = n:5:3*n
     tic
-    [ K_tilde, cov_ys, K_app, Ks_app, indices ] = approximateKernel(x', X, eigv, epsilon, alpha);
+    [ K_tilde, cov_ys, K_app, Ks_app, lambdas, indices ] = approximateKernel(x', X, eigv, epsilon, alpha);
 
     ys = K_tilde*y';
     toc
 
-    figure
-    subplot(1,2,1)
+    figure('Position', [300, 100, 1200, 400])
+    subplot(1,3,1)
     hold on
     surface(X1, X2, reshape(ys, 50, 50) - max(ys), 'FaceColor','interp','EdgeColor','interp');
     % quiver(xs(1,:), xs(2,:), ys_grad(1,:), ys_grad(2,:),'color',[.2 .2 .2]);
@@ -61,17 +108,22 @@ for eigv = 1:2:n+1
     contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
     title(['FAGP using ', num2str(eigv), ' eigenvalues'])
     axis equal
-    subplot(1,2,2)
+    subplot(1,3,2)
     hold on
-    surface(X1, X2, reshape(diag(cov_ys), 50, 50) - 0*max(diag(cov_ys)), 'FaceColor','interp','EdgeColor','interp');
+    surface(X1, X2, reshape(diag(cov_ys), 50, 50) - 1*max(diag(cov_ys)), 'FaceColor','interp','EdgeColor','interp');
     % quiver(xs(1,:), xs(2,:), ys_grad(1,:), ys_grad(2,:),'color',[.2 .2 .2]);
     plot(x(1,y==1), x(2,y==1), '.','markersize',28,'color',[.8 0 0]); %Interior points
     plot(x(1,y==0), x(2,y==0), '.','markersize',28,'color',[.8 .4 0]); %Border points
     plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
     contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
+    title('Uncertainty')
     axis equal
+    subplot(1,3,3)
+    surf(reshape(indices(:,1), [eigv,eigv]), reshape(indices(:,2), [eigv,eigv]), reshape(lambdas, [eigv,eigv]))
+    title(['Eigenvalues with \alpha = ', num2str(alpha), ' and l = ', num2str(l)])
+    view(70,20)
     drawnow
-%     hold off
+    
     pause(2);
 end
 
@@ -87,12 +139,12 @@ Kss = exp(-epsilon^2*pdist2(X, X).^2);
 % K = 2*abs(pdist2(x', x').^3) - 3*R*pdist2(x', x').^2 + R^3;
 % Ks = 2*abs(pdist2(X, x').^3) - 3*R*pdist2(X, x').^2 + R^3;
 
-ys_std = Ks/K*y';
+ys_std = Ks/(K + 1e-5*eye(size(x,2)))*y';
 cov_std = Kss - Ks/K*Ks';
 toc
 % ys2 = Ks_app/K_app*y';
 
-%% Plots
+% Plots
 
 % figure
 % hold on
@@ -102,7 +154,7 @@ toc
 % plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
 % contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
         
-figure
+figure('Position', [800, 400, 1000, 400])
 subplot(1,2,1)
 hold on
 surface(X1, X2, reshape(ys_std, 50, 50) - max(ys_std), 'FaceColor','interp','EdgeColor','interp');
@@ -121,7 +173,8 @@ contour(X1, X2, reshape(ys_std, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3))
 
 %% Approximated Gaussian Kernel
 
-function [ K_tilde, covariance, K_approx, Ks_approx, idx_comb ] = approximateKernel(x, xp, n, ep, alpha)
+function [ K_tilde, covariance, K_approx, Ks_approx, lambda_comb, idx_comb ] ...
+    = approximateKernel(x, xp, n, ep, alpha)
 
     % Combinations
     [ index1, index2 ] = ndgrid(1:n, 1:n);
