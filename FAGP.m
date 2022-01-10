@@ -13,8 +13,9 @@ clear
 
 circleRadius = 1;
 circleCenter = [ 2.5; 2.5 ];
-points = linspace(-pi,pi,100);%-pi:pi/24:(pi-1e-3);
-x_edge = circleCenter + (circleRadius + 0.1*sin(points*10) + 1e-5*randn(1,length(points))) .* [cos(points); sin(points)];
+points = linspace(-pi,pi,200);%-pi:pi/24:(pi-1e-3);
+x_edge = circleCenter + (circleRadius + 0.1*sin(points*10) + 0.11*cos(points*20 + 12) ...
+    + 1e-5*randn(1,length(points))) .* [cos(points); sin(points)];
 y_edge = zeros(1,size(x_edge,2));
 
 x_full = 0.01*randn(2,1) + circleCenter;
@@ -71,7 +72,7 @@ plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior po
 % y = -1;
 
 % Define the points under consideration
-n = 10; % # of eigenvalues
+n = 30; % # of eigenvalues
 % with n = 30, alpha = 3
 % x = [0.2, 0.4, 0.6, 0.6, 0.9, 0.55, 0.66, 0.66, 0.79, 0.08, 0.12, 0.29, 0.87, 0.91; ...
 %      0.5, 0.5, 0.5, 0.1, 0.6, 0.55, 0.54, 0.33, 0.58, 0.08, 0.30, 0.16, 0.12, 0.29];
@@ -85,12 +86,12 @@ X = [ X1(:), X2(:) ];
 % phi accepts row vector n and column vector x
 %     it returns a length(x)-by-length(n) matrix
 
-l = 0.1; % Scale factor
-alpha = 3;%sqrt(2); % Global scale factor
+l = 0.039; % Scale factor
+alpha = 0.009;%sqrt(2); % Global scale factor
 epsilon = 1/(sqrt(2)*l); % Parameter depending on scale factor
 R = 1;
 
-for eigv = n:5:3*n
+for eigv = n:10:3*n
     tic
     [ K_tilde, cov_ys, K_app, Ks_app, lambdas, indices ] = approximateKernel(x', X, eigv, epsilon, alpha);
 
@@ -105,7 +106,7 @@ for eigv = n:5:3*n
     plot(x(1,y==1), x(2,y==1), '.','markersize',28,'color',[.8 0 0]); %Interior points
     plot(x(1,y==0), x(2,y==0), '.','markersize',28,'color',[.8 .4 0]); %Border points
     plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
-    contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
+    contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color','white');
     title(['FAGP using ', num2str(eigv), ' eigenvalues'])
     axis equal
     subplot(1,3,2)
@@ -115,7 +116,7 @@ for eigv = n:5:3*n
     plot(x(1,y==1), x(2,y==1), '.','markersize',28,'color',[.8 0 0]); %Interior points
     plot(x(1,y==0), x(2,y==0), '.','markersize',28,'color',[.8 .4 0]); %Border points
     plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
-    contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
+    contour(X1, X2, reshape(ys, 50, 50), [0,0], 'linewidth',2,'color','white');
     title('Uncertainty')
     axis equal
     subplot(1,3,3)
@@ -128,7 +129,7 @@ for eigv = n:5:3*n
 end
 
 % Classic GP
-l = 0.1; % Scale factor
+l = 0.039; % Scale factor
 epsilon = 1/(sqrt(2)*l); % Parameter depending on scale factor
 tic
 K = exp(-epsilon^2*pdist2(x', x').^2);
@@ -140,7 +141,7 @@ Kss = exp(-epsilon^2*pdist2(X, X).^2);
 % Ks = 2*abs(pdist2(X, x').^3) - 3*R*pdist2(X, x').^2 + R^3;
 
 ys_std = Ks/(K + 1e-5*eye(size(x,2)))*y';
-cov_std = Kss - Ks/K*Ks';
+cov_std = Kss - Ks/(K + 1e-5*eye(size(x,2)))*Ks';
 toc
 % ys2 = Ks_app/K_app*y';
 
@@ -161,7 +162,7 @@ surface(X1, X2, reshape(ys_std, 50, 50) - max(ys_std), 'FaceColor','interp','Edg
 plot(x(1,y==1), x(2,y==1), '.','markersize',28,'color',[.8 0 0]); %Interior points
 plot(x(1,y==0), x(2,y==0), '.','markersize',28,'color',[.8 .4 0]); %Border points
 plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
-contour(X1, X2, reshape(ys_std, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
+contour(X1, X2, reshape(ys_std, 50, 50), [0,0], 'linewidth',2,'color','white');
 title('Classic GP formula');
 subplot(1,2,2)
 hold on
@@ -169,7 +170,7 @@ surface(X1, X2, reshape(diag(cov_std), 50, 50) - max(diag(cov_std)), 'FaceColor'
 plot(x(1,y==1), x(2,y==1), '.','markersize',28,'color',[.8 0 0]); %Interior points
 plot(x(1,y==0), x(2,y==0), '.','markersize',28,'color',[.8 .4 0]); %Border points
 plot(x(1,y==-1), x(2,y==-1), '.','markersize',28,'color',[0 .6 0]); %Exterior points
-contour(X1, X2, reshape(ys_std, 50, 50), [0,0], 'linewidth',2,'color',rand(1,3));
+contour(X1, X2, reshape(ys_std, 50, 50), [0,0], 'linewidth',2,'color','white');
 
 %% Approximated Gaussian Kernel
 
@@ -192,12 +193,18 @@ function [ K_tilde, covariance, K_approx, Ks_approx, lambda_comb, idx_comb ] ...
         % phi_comb is phi_m(x1)*phi_p(x2), where x1, x2 the dims of x and
         % (m,p) all the grid combinations of n eigenvalues (n^dims in
         % total)
-        phi_comb(:,idx) = eigenFnct(x(:,1), idx_comb(idx,1), ep, alpha).*...
-            eigenFnct(x(:,2), idx_comb(idx,2), ep, alpha);
-        lambda_comb(idx) = eigenValue(idx_comb(idx,1), ep, alpha)*eigenValue(idx_comb(idx,2), ep, alpha);
+%         phi_comb(:,idx) = eigenFnct(x(:,1), idx_comb(idx,1), ep, alpha).*...
+%             eigenFnct(x(:,2), idx_comb(idx,2), ep, alpha);
+%         lambda_comb(idx) = eigenValue(idx_comb(idx,1), ep, alpha)*eigenValue(idx_comb(idx,2), ep, alpha);
+%         
+%         phip_comb(:,idx) = eigenFnct(xp(:,1), idx_comb(idx,1), ep, alpha).*...
+%             eigenFnct(xp(:,2), idx_comb(idx,2), ep, alpha);
         
-        phip_comb(:,idx) = eigenFnct(xp(:,1), idx_comb(idx,1), ep, alpha).*...
-            eigenFnct(xp(:,2), idx_comb(idx,2), ep, alpha);
+        % Plot idx-th eigenfunction
+%         if idx == 10
+%             figure
+%             surf(phi_comb(:,idx)*phi_comb(:,idx)','FaceColor','interp','EdgeColor','interp')
+%         end
         
 
 
