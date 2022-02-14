@@ -101,7 +101,7 @@ The \textit{Squared Exponential} kernel is defined as:
 \begin{equation}
 	K_{(x,x')} = \exp^ {-\varepsilon^2 (x - x')^2 }
 \end{equation}
-Setting:
+Following \cite{fasshauer2012stable}, we set:
 \small
 \begin{align}
 	 \beta &= \left(1 + \left(\frac{2\varepsilon}{\alpha}\right)^2\right)^\frac{1}{4}, && \gamma_n = \sqrt{\frac{\beta}{2^{n-1}\Gamma_{(n)}}}, && \delta^2 = \frac{\alpha}{2}(\beta^2-1),
@@ -127,8 +127,7 @@ For $d$-variate kernels it holds the following expansion:
 	K_{(\mathbf{x},\mathbf{x'})} =  \sum_{\mathbf{n}\in \mathbb{N}^d} \lambda_{\mathbf{n}} \varphi_{\mathbf{n}}(x) \varphi_{\mathbf{n}}(x')
 	\end{equation}
 where $\mathbf{n}$ is the set of all $n^d$ combination of the considered number of eigenvalues.
-The eigenvalues $\lambda_{\mathbf{n}}$ and eigenfunctions $\varphi_{\mathbf{n}}(\mathbf{x})$ are defined as:
-% in \cite{fasshauer2012stable}:
+The eigenvalues $\lambda_{\mathbf{n}}$ and eigenfunctions $\varphi_{\mathbf{n}}(\mathbf{x})$ are defined as \cite{fasshauer2012stable}:
 \begin{align}
 	\lambda_{\mathbf{n}} &= \prod_{j=1}^{d} \lambda_{n_j} \\
 	\varphi_{\mathbf{n}}(\mathbf{x}) &= \prod_{j=1}^{d} \varphi_{n_{j}}(x_j)
@@ -137,7 +136,7 @@ where $d$ is the number of dimensions.
 %For the 2D case, $\mathbf{x} \in \mathrm{R}^{N \times d}$, $ \varphi_{\mathbf{n}} \in \mathrm{R}^{N}$.
 	
 \section{Gaussian Process Implicit Surface}\label{GPIS}
-Gaussian Process Implicit Surface (GPIS) allows the modeling of obstacles in environments by imposing a suitable $y$ value to the regression problem. In particular, each $\mathbf{x}$ point has a value
+Gaussian Process Implicit Surface (GPIS) \cite{martens_geometric_2017}\cite{williams2006gaussian} allows the modeling of obstacles in environments by imposing a suitable $y$ value to the regression problem. In particular, each $\mathbf{x}$ point has a value
 \begin{equation}
 	y = 
 	\begin{cases}
@@ -160,7 +159,7 @@ The GP regression problem is as follows:
 	\end{aligned}
 \end{equation}
 where $\mathbf{\bar{f}_*}$ is the prediction on the test dataset and $\cov(\mathbf{f}_*)$ is the associated uncertainty on the prediction.
-In the classic GPIS algorithms, the \textit{Square Exponential} kernel (\autoref{eq:sekernel}) and the \textit{Thin Plate} kernel (\autoref{eq:tpkernel}) are used.
+In the classic GPIS algorithms, the \textit{Square Exponential} kernel (\autoref{eq:sekernel}) and the \textit{Thin Plate} \cite{williams2006gaussian} kernel (\autoref{eq:tpkernel}) are used.
 \begin{equation}\label{eq:sekernel}
 	K_{SE(\mathbf{x}, \mathbf{x'})}  = \sigma^2 \exp \left( -\frac{\| \mathbf{x} - \mathbf{x'} \|}{2 l^2} \right)
 \end{equation}
@@ -170,7 +169,7 @@ In the classic GPIS algorithms, the \textit{Square Exponential} kernel (\autoref
 where $l$ is the kernel \textit{length scale} and $R$ is the maximum distance between datapoints.
 
 \section{GP with gradient information}
-In a GP regression problem, it is possible to provide for each $d$-dimensional point $\mathbf{x} \in \mathrm{R}^d$ both the observation $y$ and its derivative $\nabla y$. Let $\mathbf{y}^+ \in \mathrm{R}^{N(d+1)}$ be the vector of all observations and their derivatives organized as:
+In a GP regression problem, it is possible to provide for each $d$-dimensional point $\mathbf{x} \in \mathrm{R}^d$ both the observation $y$ and its derivative $\nabla y$ \cite{wu_exploiting_2018}. Let $\mathbf{y}^+ \in \mathrm{R}^{N(d+1)}$ be the vector of all observations and their derivatives organized as:
 \begin{align}
 	\mathbf{y}^+ = 
 	\begin{bmatrix}
@@ -227,14 +226,14 @@ For the 2D case, the augmented covariance matrix turns out to be:
 \subsection{Kernel derivatives}
 A list of kernel partial derivatives is provided.
 \subsubsection{Squared Exponential covariance function}
-The Squared Exponential kernel is presented in \autoref{eq:sekernel}. Differentiation leads to the fllowing expressions:
+The Squared Exponential kernel is presented in \autoref{eq:sekernel}. Differentiation leads to the following expressions \cite{martens_geometric_2017}:
 \begin{align}
 	\frac{\partial K_{SE(\mathbf{x}, \mathbf{x'})}}{\partial x_i} &= -\frac{x_i - x_i'}{l^2} K_{SE(\mathbf{x}, \mathbf{x'})} \\
 	\frac{\partial^2 K_{SE(\mathbf{x}, \mathbf{x'})}}{\partial x_i \partial x_j} &= \left( \frac{1}{l^2} \delta_{ij} - \frac{(x_i - x_i')(x_j - x_j')}{l^4} \right) K_{SE(\mathbf{x}, \mathbf{x'})}
 \end{align}
 
 \subsubsection{Thin Plate covariance function}
-Deriving \autoref{eq:tpkernel} with respect to each component of $\mathbf{x}$, one obtains:
+Deriving \autoref{eq:tpkernel} with respect to each component of $\mathbf{x}$, one obtains \cite{martens_geometric_2017}:
 \small
 \begin{align}
 	\frac{\partial K_{TP(\mathbf{x}, \mathbf{x'})}}{\partial x_i} &= 6(x_i - x_i') \left( \|\mathbf{x} - \mathbf{x'}\| - R \right) \\
@@ -264,7 +263,7 @@ Its partial derivatives are:
 \normalsize
 
 \section{Fast Approximate GPIS}	
-The Fast Approximate GPIS algorithm relies on the Kernel Decomposition algorithm presented in \autoref{kernelDec}, which allows to rewrite the GP problem with an approximated -- but smaller -- kernel matrix. The advantage is that the kernel matrix inversion is faster.\\
+The Fast Approximate GPIS algorithm \cite{joukov_fast_2020} relies on the Kernel Decomposition algorithm presented in \autoref{kernelDec}, which allows to rewrite the GP problem with an approximated -- but smaller -- kernel matrix. The advantage is that the kernel matrix inversion is faster.\\
 Regrouping the terms in \autoref{eq:mercerLim}, one obtains:
 \begin{equation}\label{eq:kernelDec}
 	K_{(\mathbf{x}, \mathbf{x'})} \approx \mathbf{\Phi}_{(\mathbf{x})} \Lambda \mathbf{\Phi}_{(\mathbf{x'})}^\trsp
@@ -300,7 +299,7 @@ in which
 \end{align*}
 Note that the regression problem needs the inversion of $\mathbf{\bar{\Lambda}}$, which is a $m \times m$ matrix. Since $m << N$, the matrix inversion is computationally less demanding with respect to the classical GP problem.
 \section{Logarithmic GPIS}
-Logarithmic GPIS allows accurate description of the distance from objects. In this implementation, also the gradient information is considered in the LogGPIS problem. Contrarily to what happens for the standard GPIS problem presented in \autoref{GPIS}, in LogGPIS only the information of the obstacle border and its gradient are needed. A train dataset $ \{ (\mathbf{x}_i, y_i) \}_{i=1}^N$, with $\mathbf{x}_i \in \mathbf{X}$ and $y_i \in \mathbf{y}$ and a test dataset $\{ (\mathbf{x}_{*i}, y_{*i}) \}_{i=1}^M$, with $\mathbf{x}_{*i} \in \mathbf{X_*}$ are given. For the 2D case, the observation vector at each $\mathbf{x}_i = [ x_1 \hspace{2mm} x_2]$ is defined as:
+Logarithmic GPIS \cite{wu_faithful_2021} allows accurate description of the distance from objects. In this implementation, also the gradient information is considered in the LogGPIS problem. Contrarily to what happens for the standard GPIS problem presented in \autoref{GPIS}, in LogGPIS only the information of the obstacle border and its gradient are needed. A train dataset $ \{ (\mathbf{x}_i, y_i) \}_{i=1}^N$, with $\mathbf{x}_i \in \mathbf{X}$ and $y_i \in \mathbf{y}$ and a test dataset $\{ (\mathbf{x}_{*i}, y_{*i}) \}_{i=1}^M$, with $\mathbf{x}_{*i} \in \mathbf{X_*}$ are given. For the 2D case, the observation vector at each $\mathbf{x}_i = [ x_1 \hspace{2mm} x_2]$ is defined as:
 \begin{equation}
 	\mathbf{y} = 
 	\begin{bmatrix}
@@ -340,4 +339,6 @@ The covariance turns out to be:
 \end{equation}
 
 %\section{Recursive GPIS}
+\bibliographystyle{ieeetr}
+\bibliography{bibl.bib}
 \end{document}
